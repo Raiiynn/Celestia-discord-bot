@@ -1,38 +1,27 @@
 const storage = require('./storage');
 
-// Regex untuk detect Discord invite links
 const INVITE_REGEX = /discord(?:\.gg|app\.com\/invite|\.com\/invite)\/[a-zA-Z0-9\-]+/gi;
 
-/**
- * Check apakah URL ada di whitelist
- */
 async function isUrlWhitelisted(guildId, url) {
   const whitelist = await storage.getWhitelistUrls(guildId);
   return whitelist.some(entry => url.includes(entry.url));
 }
 
-/**
- * Check untuk invite link (dengan whitelist)
- */
 async function checkInvites(message, guildId, settings) {
   if (!settings?.invite_block) return null;
 
   const matches = message.content.match(INVITE_REGEX);
   if (!matches) return null;
 
-  // Check apakah salah satu URL ada di whitelist
   for (const invite of matches) {
     if (await isUrlWhitelisted(guildId, invite)) {
-      return null; // Whitelisted, aman
+      return null;
     }
   }
 
   return { type: 'invite', severity: 1, content: matches[0] };
 }
 
-/**
- * Check untuk bad words dengan severity
- */
 async function checkBadwords(message, guildId, settings) {
   if (!settings?.badword_block) return null;
 
@@ -65,9 +54,6 @@ async function checkBadwords(message, guildId, settings) {
   return null;
 }
 
-/**
- * Check untuk spam patterns
- */
 async function checkSpam(message, guildId, settings) {
   if (!settings?.spam_block) return null;
 
@@ -92,9 +78,6 @@ async function checkSpam(message, guildId, settings) {
   return null;
 }
 
-/**
- * Handle moderation violation & auto-action
- */
 async function handleViolation(message, violation, guildId, settings) {
   const shouldDelete = settings?.auto_delete !== false;
 
@@ -104,7 +87,6 @@ async function handleViolation(message, violation, guildId, settings) {
     }
   } catch {}
 
-  // Add violation record
   await storage.addViolation(
     guildId,
     message.author.id,
@@ -114,10 +96,8 @@ async function handleViolation(message, violation, guildId, settings) {
     message.channelId
   );
 
-  // Get current warning count
   let warningCount = await storage.addWarning(guildId, message.author.id);
 
-  // Determine action based on warning count & severity
   const thresholdMute = settings?.warning_threshold_mute || 2;
   const thresholdKick = settings?.warning_threshold_kick || 3;
   const muteDuration = (settings?.mute_duration || 300) * 1000; // Convert to ms
@@ -126,7 +106,6 @@ async function handleViolation(message, violation, guildId, settings) {
   let muteUntil = null;
 
   if (violation.severity >= 3 || warningCount >= thresholdKick) {
-    // Kick
     action = 'kick';
     await storage.setWarningAction(guildId, message.author.id, action);
     await storage.incrementStat(guildId, 'kicks_given');
@@ -136,13 +115,11 @@ async function handleViolation(message, violation, guildId, settings) {
       console.error('[Moderation] Could not kick user:', e.message);
     }
   } else if (violation.severity >= 2 || warningCount >= thresholdMute) {
-    // Mute
     action = 'mute';
     muteUntil = new Date(Date.now() + muteDuration);
     await storage.setWarningAction(guildId, message.author.id, action, muteUntil.toISOString());
     await storage.incrementStat(guildId, 'mutes_given');
     
-    // Apply mute role
     try {
       const muteRole = message.guild?.roles.cache.find(r => r.name.toLowerCase().includes('mute'));
       if (muteRole) {
@@ -152,7 +129,6 @@ async function handleViolation(message, violation, guildId, settings) {
       console.error('[Moderation] Could not mute user:', e.message);
     }
 
-    // Auto-unmute after duration
     setTimeout(async () => {
       try {
         const muteRole = message.guild?.roles.cache.find(r => r.name.toLowerCase().includes('mute'));
@@ -164,7 +140,6 @@ async function handleViolation(message, violation, guildId, settings) {
       }
     }, muteDuration);
   } else {
-    // Warn
     action = 'warn';
     await storage.setWarningAction(guildId, message.author.id, action);
     await storage.incrementStat(guildId, 'warnings_given');
@@ -173,9 +148,6 @@ async function handleViolation(message, violation, guildId, settings) {
   return { action, warningCount, muteUntil };
 }
 
-/**
- * Create detailed log embed
- */
 function createViolationEmbed(violation, message, warningInfo) {
   const { EmbedBuilder } = require('discord.js');
   const { action, warningCount } = warningInfo;
@@ -207,9 +179,6 @@ function createViolationEmbed(violation, message, warningInfo) {
   return embed;
 }
 
-/**
- * Send moderation log to channel
- */
 async function logToChannel(message, violation, warningInfo, settings) {
   if (!settings?.log_channel_id) return;
 
