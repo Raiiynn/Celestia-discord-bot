@@ -1,20 +1,21 @@
 /**
  * GuildMemberAdd Event
- * Handle member join - AutoRole, Verification, Member tracking
+ * Handle member join - AutoRole, Verification, Greet Messages, Member tracking
  */
 
 const Discord = require('discord.js');
 const GuildsManager = require('../lib/GuildsManager');
+const GreetManager = require('../lib/GreetManager');
 
 module.exports = {
   name: 'guildMemberAdd',
   once: false,
-  
+
   async execute(member, client) {
     try {
       const guild = member.guild;
       const guildSettings = await GuildsManager.getSettings(guild.id);
-      
+
       if (!guildSettings) return;
 
       // AutoRole
@@ -37,7 +38,7 @@ module.exports = {
           const unverifiedRole = await guild.roles
             .fetch(guildSettings.verification_unverified_role)
             .catch(() => null);
-          
+
           if (unverifiedRole) {
             await member.roles.add(unverifiedRole, 'Unverified').catch(err =>
               console.error('[Verification] Error adding role:', err)
@@ -48,6 +49,15 @@ module.exports = {
         }
       }
 
+      // Greet Messages
+      if (guildSettings.greet_enabled) {
+        try {
+          await GreetManager.sendGreetMessage(member, guild);
+        } catch (err) {
+          console.error('[GreetMessages] Error:', err);
+        }
+      }
+
       // Member tracking
       console.log(`[MemberAdd] ${member.user.tag} joined ${guild.name}`);
     } catch (err) {
@@ -55,3 +65,4 @@ module.exports = {
     }
   }
 };
+

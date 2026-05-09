@@ -212,4 +212,12 @@ ALTER TABLE automod_settings ADD COLUMN IF NOT EXISTS warning_threshold_kick INT
 ALTER TABLE automod_settings ADD COLUMN IF NOT EXISTS mute_duration INTEGER DEFAULT 300;
 ALTER TABLE automod_settings ADD COLUMN IF NOT EXISTS auto_delete BOOLEAN DEFAULT TRUE;
 
+-- Greet Messages columns to guilds table
+ALTER TABLE guilds ADD COLUMN IF NOT EXISTS greet_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE guilds ADD COLUMN IF NOT EXISTS greet_mode TEXT DEFAULT 'simple';
+ALTER TABLE guilds ADD COLUMN IF NOT EXISTS greet_channels JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE guilds ADD COLUMN IF NOT EXISTS greet_message TEXT;
+ALTER TABLE guilds ADD COLUMN IF NOT EXISTS greet_embed JSONB;
+ALTER TABLE guilds ADD COLUMN IF NOT EXISTS greet_delete_after INTEGER;
+
 SELECT 'Tables created successfully!' as result;

@@ -3,7 +3,7 @@ const config = require('../config');
 
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  return new Date().toISOString().slice(0, 10);
 }
 
 function yesterdayStr() {
@@ -44,9 +44,9 @@ async function checkin(userId, guildId, username) {
 
   let newStreak = 1;
   if (user.last_checkin === yesterday) {
-    newStreak = (user.streak || 0) + 1;  // continue
+    newStreak = (user.streak || 0) + 1; 
   } else if (user.last_checkin === today) {
-    newStreak = user.streak || 1;        // same day, no increment
+    newStreak = user.streak || 1;      
   }
 
   const newLongest = Math.max(user.longest || 0, newStreak);
@@ -103,8 +103,6 @@ async function resetDailyFlags() {
   if (error) console.error('[Storage] resetDailyFlags error:', error.message);
 }
 
-// ── Music Cache ────────────────────────────────────────────────────────────────
-
 async function getMusicCache(channelId) {
   const { data } = await db.from('music_cache').select('*').eq('channel_id', channelId).single();
   return data || null;
@@ -114,7 +112,28 @@ async function saveMusicCache(channelId, messageId) {
   await db.from('music_cache').upsert({ channel_id: channelId, message_id: messageId, updated_at: new Date().toISOString() });
 }
 
-// ── AutoMod Settings ───────────────────────────────────────────────────────────
+async function getGuildMusicMonitor(guildId) {
+  const { data: guild } = await db.from('guilds').select('music_monitor_channel_id, music_monitor_enabled').eq('guild_id', guildId).single();
+  return guild || { music_monitor_channel_id: null, music_monitor_enabled: false };
+}
+
+async function setGuildMusicMonitor(guildId, channelId, enabled = true) {
+  const { data } = await db.from('guilds').upsert({
+    guild_id: guildId,
+    music_monitor_channel_id: channelId,
+    music_monitor_enabled: enabled,
+    updated_at: new Date().toISOString(),
+  }).select().single();
+  return data;
+}
+
+async function disableGuildMusicMonitor(guildId) {
+  const { data } = await db.from('guilds').update({
+    music_monitor_enabled: false,
+    updated_at: new Date().toISOString(),
+  }).eq('guild_id', guildId).select().single();
+  return data;
+}
 
 async function getAutoMod(guildId) {
   const { data } = await db.from('automod_settings').select('*').eq('guild_id', guildId).single();
@@ -133,7 +152,6 @@ async function setAutoMod(guildId, settings) {
   return await getAutoMod(guildId);
 }
 
-// ── AFK Status ────────────────────────────────────────────────────────────────
 
 async function setAfk(userId, guildId, reason = null) {
   const { error } = await db
@@ -156,7 +174,6 @@ async function removeAfk(userId, guildId) {
   await db.from('afk_status').delete().eq('user_id', userId).eq('guild_id', guildId);
 }
 
-// ── Mod Violations (mendetail setiap pelaporan) ────────────────────────────────
 
 async function addViolation(guildId, userId, type, content = null, messageId = null, channelId = null) {
   const { error } = await db.from('mod_violations').insert({
@@ -181,7 +198,6 @@ async function getViolations(guildId, userId) {
   return data || [];
 }
 
-// ── Mod Warnings (tracking pelanggaran & aksi) ───────────────────────────────
 
 async function getUserWarnings(guildId, userId) {
   const { data } = await db.from('mod_warnings').select('*').eq('guild_id', guildId).eq('user_id', userId).single();
@@ -224,7 +240,6 @@ async function resetWarnings(guildId, userId) {
   if (error) console.error('[Storage] resetWarnings error:', error.message);
 }
 
-// ── Mod Whitelist URLs ───────────────────────────────────────────────────────
 
 async function getWhitelistUrls(guildId) {
   const { data } = await db.from('mod_whitelist_urls').select('*').eq('guild_id', guildId);
@@ -239,7 +254,7 @@ async function addWhitelistUrl(guildId, url, reason = null, addedBy = null) {
     added_by: addedBy,
     added_at: new Date().toISOString(),
   });
-  if (error && error.code !== '23505') throw error; // 23505 = unique constraint
+  if (error && error.code !== '23505') throw error;
   return !error;
 }
 
@@ -248,7 +263,6 @@ async function removeWhitelistUrl(guildId, url) {
   if (error) throw error;
 }
 
-// ── Mod Bad Words ────────────────────────────────────────────────────────────
 
 async function getBadwords(guildId) {
   const { data } = await db.from('mod_badwords').select('*').eq('guild_id', guildId);
@@ -273,7 +287,6 @@ async function removeBadword(guildId, pattern) {
   if (error) throw error;
 }
 
-// ── Mod Spam Patterns ────────────────────────────────────────────────────────
 
 async function getSpamPatterns(guildId) {
   const { data } = await db.from('mod_spam_patterns').select('*').eq('guild_id', guildId);
@@ -297,7 +310,6 @@ async function removeSpamPattern(guildId, pattern) {
   if (error) throw error;
 }
 
-// ── Mod Statistics ───────────────────────────────────────────────────────────
 
 async function getStatistics(guildId) {
   const { data } = await db.from('mod_statistics').select('*').eq('guild_id', guildId).single();
@@ -324,7 +336,6 @@ async function incrementStat(guildId, statName) {
   if (error) console.error('[Storage] incrementStat error:', error.message);
 }
 
-// ── AI Conversation History ──────────────────────────────────────────────────
 
 async function getAiHistory(userId) {
   const { data } = await db.from('ai_history').select('history').eq('user_id', userId).single();
@@ -350,9 +361,7 @@ async function clearAiHistory(userId) {
   if (error) console.error('[Storage] clearAiHistory error:', error.message);
 }
 
-// ────── MUTUAL STREAKS (Pair-based like TikTok) ──────────
 async function getMutualStreak(user1, user2, guildId) {
-  // Ensure user1 < user2 for consistent ordering
   if (user1 > user2) [user1, user2] = [user2, user1];
 
   const { data, error } = await db
@@ -382,34 +391,28 @@ async function updateMutualCheckin(user1, user2, guildId, checkingUserId) {
   const now = new Date();
   const today = todayStr();
   
-  // Ensure user1 < user2
   if (user1 > user2) [user1, user2] = [user2, user1];
 
   const mutual = await getMutualStreak(user1, user2, guildId);
   const isUser1 = checkingUserId === user1;
   
-  // CHECK: Streak pair ini sudah pernah di-check-in hari ini?
   const lastMutualCheckDate = mutual.last_mutual_checkin ? 
     new Date(mutual.last_mutual_checkin).toISOString().slice(0, 10) : null;
   
   if (lastMutualCheckDate === today && mutual.streak > 0) {
-    // Pair ini sudah check-in hari ini, tunggu hari besok
     return { success: false, reason: 'pair_already_checked_today', error: 'Streak pair ini sudah checked-in hari ini!' };
   }
 
-  // Check if 24 hours passed since last mutual check-in (if first time checking)
   let shouldResetStreak = false;
   if (mutual.last_mutual_checkin && mutual.streak > 0) {
     const timeSinceMutual = now - new Date(mutual.last_mutual_checkin);
     const hoursPassed = timeSinceMutual / (1000 * 60 * 60);
     
-    // If 24+ hours passed, streak is broken
     if (hoursPassed >= 24) {
       shouldResetStreak = true;
     }
   }
 
-  // Check if other user already checked in today
   const otherChecked = isUser1 ? mutual.user2_checked : mutual.user1_checked;
   const otherCheckinTime = isUser1 ? mutual.user2_checkin_time : mutual.user1_checkin_time;
   
@@ -419,7 +422,6 @@ async function updateMutualCheckin(user1, user2, guildId, checkingUserId) {
   let newStreak = mutual.streak || 0;
   let bothCheckedToday = false;
 
-  // Mark current user as checked
   const updates = {
     guild_id: guildId,
     user1_id: user1,
@@ -432,21 +434,17 @@ async function updateMutualCheckin(user1, user2, guildId, checkingUserId) {
     updated_at: new Date().toISOString(),
   };
 
-  // If 24+ hours passed since last mutual check-in, reset streak
   if (shouldResetStreak) {
     updates.streak = 0;
     newStreak = 0;
   }
 
-  // Check if other user already checked in today
   if (otherCheckedToday) {
-    // Both checked in today → increment streak!
     newStreak = Math.max(1, (mutual.streak || 0) + 1);
     updates.streak = newStreak;
     updates.longest = Math.max(mutual.longest || 0, newStreak);
     updates.last_mutual_checkin = now.toISOString();
     
-    // Reset flags + timestamps for tomorrow
     updates.user1_checked = false;
     updates.user2_checked = false;
     updates.user1_checkin_time = null;
@@ -490,6 +488,7 @@ module.exports = {
   todayStr, yesterdayStr, getStreakTier,
   getUserStreak, checkin, getActiveStreaks, getLeaderboard, resetDailyFlags,
   getMusicCache, saveMusicCache,
+  getGuildMusicMonitor, setGuildMusicMonitor, disableGuildMusicMonitor,
   getAutoMod, setAutoMod,
   setAfk, getAfk, removeAfk,
   // Violations

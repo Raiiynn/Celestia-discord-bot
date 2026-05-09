@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { buildMusicEmbed, updateMusicMonitor, isMusicBot } = require('../../utils/musicMonitor');
+const { SlashCommandBuilder, EmbedBuilder, ChannelType } = require('discord.js');
+const { buildMusicEmbed, updateGuildMusicMonitor, isMusicBot } = require('../../utils/musicMonitor');
+const storage = require('../../utils/storage');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,6 +13,20 @@ module.exports = {
     .addSubcommand(sub =>
       sub.setName('bots')
         .setDescription('List all detected music bots')
+    )
+    .addSubcommand(sub =>
+      sub.setName('enable')
+        .setDescription('Enable music bot monitoring in this server')
+        .addChannelOption(opt =>
+          opt.setName('channel')
+            .setDescription('Channel to post the monitor')
+            .addChannelTypes(ChannelType.GuildText)
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(sub =>
+      sub.setName('disable')
+        .setDescription('Disable music bot monitoring in this server')
     ),
 
   async execute(interaction, client) {
@@ -22,7 +37,7 @@ module.exports = {
       const embed = await buildMusicEmbed(interaction.guild);
       await interaction.editReply({ embeds: [embed] });
 
-      await updateMusicMonitor(client).catch(() => {});
+      await updateGuildMusicMonitor(client, interaction.guild).catch(() => {});
       return;
     }
 
@@ -44,6 +59,35 @@ module.exports = {
         .setDescription(lines.join('\n'));
 
       return interaction.editReply({ embeds: [embed] });
+    }
+
+    if (sub === 'enable') {
+      const channel = interaction.options.getChannel('channel');
+
+      await storage.setGuildMusicMonitor(interaction.guild.id, channel.id, true);
+
+      const embed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('✅ Music Monitor Enabled')
+        .setDescription(`Music bot monitoring will be posted in ${channel}. This updates every 30 seconds.`)
+        .setFooter({ text: 'Use /music disable to turn off monitoring' });
+
+      await interaction.editReply({ embeds: [embed] });
+
+      await updateGuildMusicMonitor(client, interaction.guild).catch(console.error);
+      return;
+    }
+
+    if (sub === 'disable') {
+      await storage.disableGuildMusicMonitor(interaction.guild.id);
+
+      const embed = new EmbedBuilder()
+        .setColor(0xFF0000)
+        .setTitle('✅ Music Monitor Disabled')
+        .setDescription('Music bot monitoring has been turned off for this server.');
+
+      await interaction.editReply({ embeds: [embed] });
+      return;
     }
   },
 };

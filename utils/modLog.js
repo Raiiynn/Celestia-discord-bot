@@ -1,15 +1,9 @@
-/**
- * Moderation Logging
- * Send moderation actions to logging channel
- */
-
 const Discord = require('discord.js');
 
 /**
- * Send a moderation log to the configured logs channel
- * @param {Discord.Guild} guild - The guild
- * @param {Object} guildSettings - Guild settings from Supabase
- * @param {Discord.EmbedBuilder} embed - Embed to log
+ * @param {Discord.Guild} guild 
+ * @param {Object} guildSettings 
+ * @param {Discord.EmbedBuilder} embed 
  */
 async function sendModLog(guild, guildSettings, embed) {
   if (!guildSettings?.logs_enabled || !guildSettings.logs_moderator) return;
@@ -26,9 +20,6 @@ async function sendModLog(guild, guildSettings, embed) {
   }
 }
 
-/**
- * Send a general log message
- */
 async function sendLog(guild, guildSettings, embed, channelType = 'logs_basic') {
   if (!guildSettings?.logs_enabled || !guildSettings[channelType]) return;
 
@@ -44,9 +35,6 @@ async function sendLog(guild, guildSettings, embed, channelType = 'logs_basic') 
   }
 }
 
-/**
- * Create an infraction log embed
- */
 function createInfractionEmbed(type, user, issuer, reason, duration) {
   const embed = new Discord.EmbedBuilder()
     .setColor('Red')

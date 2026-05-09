@@ -5,12 +5,15 @@ const {
 const fs   = require('fs');
 const path = require('path');
 const cron = require('node-cron');
+const commands = [];
+const commandsDir = path.join(__dirname, 'commands');
 
 const config       = require('./config');
 const storage      = require('./utils/storage');
 const setupDatabase = require('./lib/setupDatabase');
 const musicMonitor = require('./utils/musicMonitor');
-const { loadCommands, loadEvents, setupErrorHandling } = require('./handlers');
+const { loadCommands, loadEvents, setupErrorHandling, deployCommands } = require('./handlers');
+const { REST, Routes } = require('discord.js');
 
 const client = new Client({
   intents: [
@@ -30,45 +33,53 @@ client.commands   = new Collection();
 client.prefixCmds = new Collection();
 client.maintenance = false;
 
-function loadCommandsRecursive(dir) {
-  for (const file of fs.readdirSync(dir)) {
-    const fullPath = path.join(dir, file);
-    if (fs.statSync(fullPath).isDirectory()) {
-      loadCommandsRecursive(fullPath);
-    } else if (file.endsWith('.js')) {
-      const cmd = require(fullPath);
-      if (cmd.data)       client.commands.set(cmd.data.name, cmd);
-      if (cmd.prefixName) client.prefixCmds.set(cmd.prefixName, cmd);
-      if (cmd.aliases)    cmd.aliases.forEach(a => client.prefixCmds.set(a, cmd));
-    }
-  }
-}
-
-loadCommandsRecursive(path.join(__dirname, 'commands'));
-
-const evtDir = path.join(__dirname, 'events');
-for (const file of fs.readdirSync(evtDir).filter(f => f.endsWith('.js'))) {
-  const event = require(path.join(evtDir, file));
-  const fn    = (...args) => event.execute(...args, client);
-  event.once ? client.once(event.name, fn) : client.on(event.name, fn);
-}
+// Load commands and events using handlers
+(async () => {
+  await loadCommands(client);
+  await loadEvents(client);
+  setupErrorHandling();
+})();
 
 client.once('ready', async () => {
   console.log(`✅  Logged in as ${client.user.tag}`);
-  
+
   try {
     await setupDatabase.initializeDatabase();
     console.log('✅ Database initialized successfully');
   } catch (e) {
     console.error('⚠️  Database init error (may already exist):', e.message);
   }
-  
+
   client.user.setActivity('/help | Music Monitor & Streaks', { type: ActivityType.Watching });
+
+  // Deploy slash commands on startup (guild-only for instant update)
+  try {
+    await deployCommands(client);
+    console.log('✅ Slash commands deployed');
+  } catch (e) {
+    console.error('❌ Command deploy error:', e.message);
+  }
 
   if (config.musicMonitorChannelId) {
     await musicMonitor.updateMusicMonitor(client);
     setInterval(() => musicMonitor.updateMusicMonitor(client), 30_000);
   }
+
+  // Multi-guild music monitoring
+  setInterval(async () => {
+    try {
+      const guilds = client.guilds.cache;
+      for (const [, guild] of guilds) {
+        try {
+          await musicMonitor.updateGuildMusicMonitor(client, guild);
+        } catch (e) {
+          console.error(`[MusicMonitor] Error in guild ${guild.name}:`, e.message);
+        }
+      }
+    } catch (e) {
+      console.error('[MusicMonitor] Global update error:', e.message);
+    }
+  }, 30_000);
 
   cron.schedule('0 0 * * *', async () => {
     await storage.resetDailyFlags();
@@ -96,7 +107,12 @@ client.on('messageCreate', async message => {
   } catch (e) {
     console.error(`[Prefix CMD Error] ${prefix}${cmd}:`, e);
     message.reply({ content: '❌ Command error occurred.' });
+    
   }
+
+  app.get('/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
 });
 
 client.login(config.token);

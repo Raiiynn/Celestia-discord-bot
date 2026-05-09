@@ -1,30 +1,16 @@
-/**
- * Embed Generator - Create formatted Discord embeds
- * Ported from Guardian bot with Supabase compatibility
- */
-
 const Discord = require('discord.js');
 const ms = require('ms');
 
-/**
- * Create a basic success embed
- */
 function basicEmbed(description) {
   const embed = new Discord.EmbedBuilder().setColor('Green');
   if (description) embed.setDescription(description);
   return embed;
 }
 
-/**
- * Create an error embed
- */
 function errorEmbed(description = 'There was an error.') {
   return new Discord.EmbedBuilder().setColor('Red').setDescription(description);
 }
 
-/**
- * Create an infraction embed
- */
 function infractionEmbed(guild, issuer, type, duration, expires, reason = 'Unspecified reason.') {
   let durationString;
   let expiresString;
@@ -57,9 +43,6 @@ function infractionEmbed(guild, issuer, type, duration, expires, reason = 'Unspe
     .setTimestamp();
 }
 
-/**
- * Create a paginated embed with buttons
- */
 async function pagesEmbed(interaction, embeds, ephemeral = false) {
   if (embeds.length === 0)
     return interaction.reply({ content: 'There was an error.', ephemeral: true });
