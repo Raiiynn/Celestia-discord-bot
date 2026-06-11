@@ -5,6 +5,7 @@ const inviteDetector = require('../utils/inviteDetector');
 const { cleanupUserMessages } = require('../utils/cleanupMessages');
 const { applyPunishment, isWhitelisted } = require('../utils/punishment');
 const { createTriggerEmbed } = require('../utils/honeypotEmbed');
+const { scheduleUpdate } = require('../services/banEmbedUpdater');
 
 // In-memory cooldown map to prevent duplicate processing
 const processingCooldowns = new Map();
@@ -50,9 +51,19 @@ async function processHoneypotMessage(message, client) {
       return false;
     }
 
-    // Detect invite spam
-    const detectedInvites = inviteDetector.getInvites(message.content);
-    if (detectedInvites.length === 0) {
+    // Treat any message in the honeypot channel as a trigger (catch-all)
+    // This includes text, attachments, embeds, stickers, and CDN attachment links.
+    const detectedInvites = inviteDetector.getInvites(message.content || '');
+    const detectedAttachments = inviteDetector.getCdnAttachments
+      ? inviteDetector.getCdnAttachments(message.content || '')
+      : [];
+    const hasAttachments = message.attachments && message.attachments.size > 0;
+    const hasEmbeds = message.embeds && message.embeds.length > 0;
+    const hasStickers = message.stickers && message.stickers.size > 0;
+
+    // If the user is whitelisted we already returned earlier; otherwise any message is a trigger
+    const isTrigger = true; // catch-all mode
+    if (!isTrigger) {
       return false;
     }
 
@@ -148,6 +159,15 @@ async function processHoneypotMessage(message, client) {
         }
       } catch (err) {
         console.error('[HoneypotHandler] Error fetching log channel:', err.message);
+      }
+    }
+
+    // 6. Schedule embed update if embed is set up
+    if (config.embed_channel_id && config.embed_message_id) {
+      try {
+        scheduleUpdate(message.guild, config.embed_channel_id, config.embed_message_id);
+      } catch (err) {
+        console.error('[HoneypotHandler] Error scheduling embed update:', err.message);
       }
     }
 
