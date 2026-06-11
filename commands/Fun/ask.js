@@ -15,32 +15,33 @@ module.exports = {
   async execute(interaction) {
     const input = interaction.options.getString('question').trim();
 
-    if (input.toLowerCase() === 'clear') {
-      await storage.clearAiHistory(interaction.user.id);
-      return interaction.reply({ content: 'Conversation history cleared.', ephemeral: true });
-    }
-
-    if (input.toLowerCase() === 'stats') {
-      const history = await storage.getAiHistory(interaction.user.id);
-return interaction.reply({
-        content: `Stats: Turns in memory: ${history.length}`,
-        ephemeral: true,
-      });
-    }
-
     if (!config.openRouterKey) {
       return interaction.reply({ content: '❌ OpenRouter API key not configured', ephemeral: true });
     }
 
+    // Defer immediately to avoid timeout
     await interaction.deferReply();
 
     try {
+      if (input.toLowerCase() === 'clear') {
+        await storage.clearAiHistory(interaction.user.id);
+        return interaction.editReply({ content: 'Conversation history cleared.', ephemeral: true });
+      }
+
+      if (input.toLowerCase() === 'stats') {
+        const history = await storage.getAiHistory(interaction.user.id);
+        return interaction.editReply({
+          content: `Stats: Turns in memory: ${history.length}`,
+          ephemeral: true,
+        });
+      }
+
       const history = await storage.getAiHistory(interaction.user.id);
-      
+
       const messages = [
         {
           role: 'system',
-          content: 'You are a helpful assistant. Answer in Indonesian or English based on user preference. Be concise.'
+          content: 'You are a helpful assistant. Answer in Indonesian or English based on user preference. Be concise. IMPORTANT: Never disclose the model name, API provider, or technical details about how you work. If asked about your model, say "I\'m an AI assistant" or similar vague response.'
         },
         ...history.map(msg => ({
           role: msg.role === 'model' ? 'assistant' : msg.role,
@@ -79,7 +80,7 @@ return interaction.reply({
       await storage.saveAiHistory(interaction.user.id, newHistory);
 
       const reply = text.length > 1900 ? text.slice(0, 1900) + '…' : text;
-      await interaction.editReply(`${reply}`);
+      await interaction.editReply(reply);
     } catch (e) {
       console.error('[Ask Error]', e.message);
       await interaction.editReply(`Error: ${e.message}`);

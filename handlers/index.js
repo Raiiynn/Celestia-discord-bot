@@ -5,27 +5,27 @@ const config = require('../config');
 
 async function loadCommands(client) {
   const commandsDir = path.join(__dirname, '../commands');
-  const commands = [];
   
-  try {
-    const files = fs.readdirSync(commandsDir).filter(f => f.endsWith('.js'));
-    
-    for (const file of files) {
-      try {
-        const command = require(path.join(commandsDir, file));
-        if (command.data) {
-          client.commands.set(command.data.name, command);
-          commands.push(command.data.toJSON());
-          console.log(`[Commands] ✅ Loaded: ${command.data.name}`);
+  function loadRecursive(dir) {
+    for (const file of fs.readdirSync(dir)) {
+      const fullPath = path.join(dir, file);
+      if (fs.statSync(fullPath).isDirectory()) {
+        loadRecursive(fullPath);
+      } else if (file.endsWith('.js')) {
+        try {
+          const command = require(fullPath);
+          if (command.data) {
+            client.commands.set(command.data.name, command);
+            console.log(`[Commands] ✅ Loaded: ${command.data.name}`);
+          }
+        } catch (err) {
+          console.error(`[Commands] ❌ Error loading ${file}:`, err);
         }
-      } catch (err) {
-        console.error(`[Commands] ❌ Error loading ${file}:`, err);
       }
     }
-  } catch (err) {
-    console.error('[Commands] Error loading commands:', err);
   }
-  return commands;
+  
+  loadRecursive(commandsDir);
 }
 
 async function loadEvents(client) {
@@ -70,21 +70,26 @@ async function deployCommands(client) {
   const commandsDir = path.join(__dirname, '../commands');
   const commands = [];
 
-  for (const file of fs.readdirSync(commandsDir)) {
-    const fullPath = path.join(commandsDir, file);
-    if (fs.statSync(fullPath).isDirectory()) continue;
-    if (!file.endsWith('.js')) continue;
-
-    try {
-      const mod = require(fullPath);
-      if (mod.data) {
-        commands.push(mod.data.toJSON());
-        console.log(`[Deploy] Loaded: ${mod.data.name}`);
+  function collectCommands(dir) {
+    for (const file of fs.readdirSync(dir)) {
+      const fullPath = path.join(dir, file);
+      if (fs.statSync(fullPath).isDirectory()) {
+        collectCommands(fullPath);
+      } else if (file.endsWith('.js')) {
+        try {
+          const mod = require(fullPath);
+          if (mod.data) {
+            commands.push(mod.data.toJSON());
+            console.log(`[Deploy] Loaded: ${mod.data.name}`);
+          }
+        } catch (err) {
+          console.error(`[Deploy] Error loading ${file}:`, err.message);
+        }
       }
-    } catch (err) {
-      console.error(`[Deploy] Error loading ${file}:`, err.message);
     }
   }
+
+  collectCommands(commandsDir);
 
   const rest = new REST({ version: '10' }).setToken(config.token);
   const guildId = process.env.GUILD_ID;

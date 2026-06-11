@@ -220,4 +220,54 @@ ALTER TABLE guilds ADD COLUMN IF NOT EXISTS greet_message TEXT;
 ALTER TABLE guilds ADD COLUMN IF NOT EXISTS greet_embed JSONB;
 ALTER TABLE guilds ADD COLUMN IF NOT EXISTS greet_delete_after INTEGER;
 
+-- Honey Pot Spam Trap tables
+CREATE TABLE IF NOT EXISTS honeypot_configs (
+  guild_id                  TEXT PRIMARY KEY,
+  enabled                   BOOLEAN DEFAULT FALSE,
+  honeypot_channel_id       TEXT,
+  log_channel_id            TEXT,
+  punishment_mode           TEXT DEFAULT 'BAN',
+  timeout_duration_ms       BIGINT DEFAULT 3600000,
+  cleanup_enabled           BOOLEAN DEFAULT TRUE,
+  cleanup_window_minutes    INTEGER DEFAULT 60,
+  total_triggers            INTEGER DEFAULT 0,
+  total_bans                INTEGER DEFAULT 0,
+  total_timeouts            INTEGER DEFAULT 0,
+  total_deletions           INTEGER DEFAULT 0,
+  last_trigger_at           TIMESTAMPTZ,
+  created_at                TIMESTAMPTZ DEFAULT NOW(),
+  updated_at                TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS honeypot_whitelist (
+  id                BIGSERIAL PRIMARY KEY,
+  guild_id          TEXT NOT NULL,
+  target_id         TEXT NOT NULL,
+  target_type       TEXT NOT NULL,
+  added_by          TEXT,
+  added_at          TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (guild_id, target_id, target_type)
+);
+
+CREATE TABLE IF NOT EXISTS honeypot_triggers (
+  id                BIGSERIAL PRIMARY KEY,
+  guild_id          TEXT NOT NULL,
+  user_id           TEXT NOT NULL,
+  message_id        TEXT,
+  channel_id        TEXT NOT NULL,
+  violation_type    TEXT DEFAULT 'INVITE_SPAM',
+  message_content   TEXT,
+  deleted_count     INTEGER DEFAULT 0,
+  punishment_applied TEXT,
+  errors            JSONB DEFAULT '[]'::jsonb,
+  triggered_at      TIMESTAMPTZ DEFAULT NOW(),
+  INDEX idx_guild_user (guild_id, user_id),
+  INDEX idx_triggered_at (triggered_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_honeypot_configs_guild ON honeypot_configs(guild_id);
+CREATE INDEX IF NOT EXISTS idx_honeypot_whitelist_guild ON honeypot_whitelist(guild_id);
+CREATE INDEX IF NOT EXISTS idx_honeypot_triggers_guild ON honeypot_triggers(guild_id);
+CREATE INDEX IF NOT EXISTS idx_honeypot_triggers_user ON honeypot_triggers(user_id);
+
 SELECT 'Tables created successfully!' as result;

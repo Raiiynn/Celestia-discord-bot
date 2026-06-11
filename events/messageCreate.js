@@ -2,12 +2,21 @@
 const config       = require('../config');
 const storage      = require('../utils/storage');
 const moderation   = require('../utils/moderation');
+const { processHoneypotMessage } = require('../handlers/honeypotHandler');
 
 module.exports = {
   name: 'messageCreate',
   async execute(message, client) {
     if (!message.guild) return;
     if (message.author.bot) return;
+
+    // ── HONEY POT: Check if this is a honey pot trigger ──────────────────────
+    try {
+      const isHoneypotTrigger = await processHoneypotMessage(message, client);
+      if (isHoneypotTrigger) return; // Stop processing if honey pot was triggered
+    } catch (err) {
+      console.error('[HoneypotEvent] Error processing honey pot:', err);
+    }
 
     // ── MODERATION: Get settings once ──────────────────────────────────────────
     const settings = await storage.getAutoMod(message.guildId);
