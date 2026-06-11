@@ -3,6 +3,7 @@
 const { SlashCommandBuilder, ChannelType } = require('discord.js');
 const HoneypotManager = require('../../lib/HoneypotManager');
 const { createStatusEmbed, createStatsEmbed, createTestEmbed } = require('../../utils/honeypotEmbed');
+const { buildBanEmbed } = require('../../utils/banEmbed');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -79,6 +80,18 @@ module.exports = {
         .setName('test')
         .setDescription('Send a preview embed (no punishment)')
     )
+    .addSubcommand(sub =>
+      sub
+        .setName('embed-init')
+        .setDescription('Create and link auto-updating ban-count embed to a channel')
+        .addChannelOption(opt =>
+          opt
+            .setName('channel')
+            .setDescription('Channel where the embed will be posted')
+            .addChannelTypes(ChannelType.GuildText)
+            .setRequired(true)
+        )
+    )
     .addSubcommandGroup(group =>
       group
         .setName('whitelist')
@@ -152,6 +165,9 @@ module.exports = {
             break;
           case 'test':
             await handleTest(interaction);
+            break;
+          case 'embed-init':
+            await handleEmbedInit(interaction);
             break;
         }
       }
@@ -287,6 +303,62 @@ async function handleTest(interaction) {
 
   const embed = createTestEmbed(interaction.guild);
   await interaction.editReply({ embeds: [embed] });
+}
+
+async function handleEmbedInit(interaction) {
+  await interaction.deferReply();
+
+  const config = await HoneypotManager.getConfig(interaction.guildId);
+  if (!config) {
+    return interaction.editReply({
+      content: '❌ Honey pot not configured. Use `/honeypot setup` first.',
+    });
+  }
+
+  const channel = interaction.options.getChannel('channel');
+  if (!channel.isTextBased()) {
+    return interaction.editReply({
+      content: '❌ Channel must be a text channel',
+    });
+  }
+
+  try {
+    // Build initial embed with current ban count
+    const banCount = config.total_bans || 0;
+    const embed = buildBanEmbed({
+      guildName: interaction.guild.name,
+      banCount,
+      bilingual: true,
+      footerText: `Auto Moderation - Honey Pot • ${new Date().toLocaleString()}`,
+    });
+
+    // Send embed to target channel
+    const message = await channel.send({ embeds: [embed] });
+
+    // Save message ID and channel ID to config
+    const updated = await HoneypotManager.upsertConfig(interaction.guildId, {
+      embed_channel_id: channel.id,
+      embed_message_id: message.id,
+    });
+
+    if (!updated) {
+      return interaction.editReply({
+        content: '⚠️ Embed sent but failed to save message ID to database',
+      });
+    }
+
+    await interaction.editReply({
+      content: `✅ **Ban-count embed initialized**\n\n` +
+        `📍 Posted in: ${channel}\n` +
+        `🔗 Message ID: \`${message.id}\`\n\n` +
+        `📊 The embed will auto-update when bans are applied or removed!`,
+    });
+  } catch (err) {
+    console.error('[handleEmbedInit] Error:', err);
+    return interaction.editReply({
+      content: `❌ Failed to send embed: ${err.message}`,
+    });
+  }
 }
 
 async function handleWhitelist(interaction, subcommand) {
