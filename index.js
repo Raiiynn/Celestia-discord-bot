@@ -50,7 +50,7 @@ client.once('ready', async () => {
     console.error('⚠️  Database init error (may already exist):', e.message);
   }
 
-  client.user.setActivity('/help | Music Monitor & Streaks', { type: ActivityType.Watching });
+  client.user.setActivity('/help | Automod & Fun', { type: ActivityType.Watching });
 
   // Deploy slash commands on startup (guild-only for instant update)
   try {
