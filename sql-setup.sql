@@ -235,9 +235,15 @@ CREATE TABLE IF NOT EXISTS honeypot_configs (
   total_timeouts            INTEGER DEFAULT 0,
   total_deletions           INTEGER DEFAULT 0,
   last_trigger_at           TIMESTAMPTZ,
+  embed_channel_id          TEXT,
+  embed_message_id          TEXT,
   created_at                TIMESTAMPTZ DEFAULT NOW(),
   updated_at                TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add embed columns if they don't exist (for existing tables)
+ALTER TABLE honeypot_configs ADD COLUMN IF NOT EXISTS embed_channel_id TEXT;
+ALTER TABLE honeypot_configs ADD COLUMN IF NOT EXISTS embed_message_id TEXT;
 
 CREATE TABLE IF NOT EXISTS honeypot_whitelist (
   id                BIGSERIAL PRIMARY KEY,
