@@ -20,6 +20,17 @@ const INVITE_PATTERNS = [
 ];
 
 /**
+ * Regex patterns for Discord CDN attachment links (images/files)
+ * Matches URLs like:
+ *  - https://cdn.discordapp.com/attachments/<channelId>/<attachmentId>/<filename>
+ *  - https://media.discordapp.net/attachments/<channelId>/<attachmentId>/<filename>
+ */
+const CDN_ATTACHMENT_PATTERNS = [
+  /(?:https?:\/\/)?cdn\.discordapp\.com\/attachments\/[0-9]+\/[0-9]+\/[\w%\-\.\(\)\[\]@!~,;:=+]+/gi,
+  /(?:https?:\/\/)?media\.discordapp\.net\/attachments\/[0-9]+\/[0-9]+\/[\w%\-\.\(\)\[\]@!~,;:=+]+/gi,
+];
+
+/**
  * Detect Discord invite links in content (with bypass attempts)
  * @param {string} content - Message content to check
  * @returns {string[]|null} - Array of detected invite links or null if none found
@@ -63,9 +74,37 @@ function getInvites(content) {
   return invites || [];
 }
 
+/**
+ * Detect Discord CDN attachment links (images/files) in content
+ * @param {string} content
+ * @returns {string[]|null}
+ */
+function detectCdnAttachments(content) {
+  if (!content || typeof content !== 'string') return null;
+
+  const detected = [];
+  const cleanContent = content.toLowerCase();
+
+  for (const pattern of CDN_ATTACHMENT_PATTERNS) {
+    const matches = cleanContent.match(pattern);
+    if (matches) detected.push(...matches);
+  }
+
+  return detected.length > 0 ? [...new Set(detected)] : null;
+}
+
+function getCdnAttachments(content) {
+  const hits = detectCdnAttachments(content);
+  return hits || [];
+}
+
 module.exports = {
   detectInvites,
   isInviteSpam,
   getInvites,
   INVITE_PATTERNS,
+  // CDN attachment detection
+  detectCdnAttachments,
+  getCdnAttachments,
+  CDN_ATTACHMENT_PATTERNS,
 };
