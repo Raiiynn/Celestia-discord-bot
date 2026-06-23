@@ -25,8 +25,8 @@ module.exports = {
           .setTitle('Thanks for adding me!')
           .setDescription('Use `/help` to get started')
           .addFields(
-            { name: 'Documentation', value: '[Visit our docs](https://docs.example.com)' },
-            { name: 'Support Server', value: '[Join here](https://discord.gg/example)' }
+            { name: 'Documentation', value: '[Visit our docs](https://celestia-discord.vercel.app/)' },
+            { name: 'Support Server', value: '[Join here](https://discord.gg/nKqup7JBN)' }
           );
         
         await owner.send({ embeds: [embed] }).catch(() => null);
