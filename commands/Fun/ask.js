@@ -1,89 +1,69 @@
-const { SlashCommandBuilder } = require('discord.js');
-const storage = require('../../utils/storage');
-const config = require('../../config');
+"use strict";
+
+const { SlashCommandBuilder } = require("discord.js");
+const storage = require("../../utils/storage");
+const aiService = require("../../services/aiService");
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('ask')
-    .setDescription('Ask ChatGPT a question')
-    .addStringOption(o =>
-      o.setName('question')
-        .setDescription('Your question, "clear" to reset history, or "stats" for usage info')
-        .setRequired(true)
+    .setName("ask")
+    .setDescription("Tanya AI assistant")
+    .addStringOption((opt) =>
+      opt
+        .setName("pertanyaan")
+        .setDescription(
+          'Pertanyaan kamu — atau ketik "clear" untuk hapus history',
+        )
+        .setRequired(true),
     ),
 
   async execute(interaction) {
-    const input = interaction.options.getString('question').trim();
+    const input = interaction.options.getString("pertanyaan").trim();
 
-    if (!config.openRouterKey) {
-      return interaction.reply({ content: '❌ OpenRouter API key not configured', ephemeral: true });
+    // ── deferReply HARUS dipanggil pertama sebelum operasi async apapun ───────
+    // Discord memberi waktu 3 detik saja; jika lewat → Unknown Interaction (10062)
+    const isEphemeral = input.toLowerCase() === "clear";
+    await interaction.deferReply({ flags: isEphemeral ? 64 : undefined });
+
+    // ── Clear history ─────────────────────────────────────────────────────────
+    if (isEphemeral) {
+      await storage.clearAiHistory(interaction.user.id);
+      return interaction.editReply("🗑️ History percakapan kamu sudah dihapus.");
     }
 
-    // Defer immediately to avoid timeout
-    await interaction.deferReply();
-
     try {
-      if (input.toLowerCase() === 'clear') {
-        await storage.clearAiHistory(interaction.user.id);
-        return interaction.editReply({ content: 'Conversation history cleared.', ephemeral: true });
-      }
+      const [history, aiConfig] = await Promise.all([
+        storage.getAiHistory(interaction.user.id),
+        storage.getAiConfig(interaction.guildId),
+      ]);
 
-      if (input.toLowerCase() === 'stats') {
-        const history = await storage.getAiHistory(interaction.user.id);
-        return interaction.editReply({
-          content: `Stats: Turns in memory: ${history.length}`,
-          ephemeral: true,
-        });
-      }
+      const systemPrompt = aiService.buildSystemPrompt(
+        aiConfig?.persona ?? null,
+      );
+      const aiReply = await aiService.callOpenRouter(
+        systemPrompt,
+        history,
+        input,
+      );
 
-      const history = await storage.getAiHistory(interaction.user.id);
-
-      const messages = [
-        {
-          role: 'system',
-          content: 'You are a helpful assistant. Answer in Indonesian or English based on user preference. Be concise. IMPORTANT: Never disclose the model name, API provider, or technical details about how you work. If asked about your model, say "I\'m an AI assistant" or similar vague response.'
-        },
-        ...history.map(msg => ({
-          role: msg.role === 'model' ? 'assistant' : msg.role,
-          content: msg.parts[0].text
-        }))
-      ];
-      messages.push({ role: 'user', content: input });
-
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${config.openRouterKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://discord.com',
-          'X-Title': 'Celestia Bot',
-        },
-        body: JSON.stringify({
-          model: 'gpt-oss-120b:free',
-          messages: messages,
-          max_tokens: 1000,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const text = data.choices[0].message.content;
-
-      const newHistory = [
-        ...history,
-        { role: 'user', parts: [{ text: input }] },
-        { role: 'model', parts: [{ text }] },
-      ].slice(-20);
+      // Simpan history
+      const newHistory = aiService.appendHistory(history, input, aiReply);
       await storage.saveAiHistory(interaction.user.id, newHistory);
 
-      const reply = text.length > 1900 ? text.slice(0, 1900) + '…' : text;
-      await interaction.editReply(reply);
-    } catch (e) {
-      console.error('[Ask Error]', e.message);
-      await interaction.editReply(`Error: ${e.message}`);
+      // Kirim — split kalau terlalu panjang
+      const parts = aiService.splitMessage(aiReply);
+      await interaction.editReply(parts[0]);
+      for (const part of parts.slice(1)) {
+        await interaction.followUp(part);
+      }
+    } catch (err) {
+      console.error("[/ask]", err.message);
+      const errMsg = `❌ **Gagal mendapat respons AI**\n\`\`\`\n${err.message}\n\`\`\``;
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply(errMsg);
+      } else {
+        await interaction.reply({ content: errMsg, flags: 64 });
+      }
     }
   },
 };
