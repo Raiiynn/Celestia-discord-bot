@@ -41,13 +41,30 @@ client.maintenance = false;
 })();
 
 client.once('ready', async () => {
-  console.log(`✅  Logged in as ${client.user.tag}`);
+  console.clear();
+  console.log(`\x1b[36m
+  ╔══════════════════════════════════════════════════╗
+  ║                🚀 BOT DISCORD CELESTIA           ║
+  ║              By raiiynnn                         ║
+  ╚══════════════════════════════════════════════════╝
+  \x1b[0m`);
+
+  console.log(`\x1b[33m
+  ╔══════════════════════════════════════════════════╗
+  ║                  INITIALIZING                    ║
+  ╠══════════════════════════════════════════════════╣
+  ║ • \x1b[32m✅ Logging in as ${client.user.tag}\x1b[33m ║
+  ║ • \x1b[32mInitializing Database...\x1b[33m        ║
+  ║ • \x1b[32mDeploying Commands...\x1b[33m           ║
+  ║ • \x1b[32mSetting up Monitors...\x1b[33m          ║
+  ╚══════════════════════════════════════════════════╝
+  \x1b[0m`);
 
   try {
     await setupDatabase.initializeDatabase();
-    console.log('✅ Database initialized successfully');
+    console.log('\x1b[32m✅ Database initialized successfully\x1b[0m');
   } catch (e) {
-    console.error('⚠️  Database init error (may already exist):', e.message);
+    console.error('\x1b[31m⚠️  Database init error (may already exist):', e.message, '\x1b[0m');
   }
 
   client.user.setActivity('/help | Automod & Fun', { type: ActivityType.Watching });
@@ -55,9 +72,9 @@ client.once('ready', async () => {
   // Deploy slash commands on startup (guild-only for instant update)
   try {
     await deployCommands(client);
-    console.log('✅ Slash commands deployed');
+    console.log('\x1b[32m✅ Slash commands deployed\x1b[0m');
   } catch (e) {
-    console.error('❌ Command deploy error:', e.message);
+    console.error('\x1b[31m❌ Command deploy error:', e.message, '\x1b[0m');
   }
 
   if (config.musicMonitorChannelId) {
@@ -86,7 +103,25 @@ client.once('ready', async () => {
     console.log('[Cron] Daily streak flags reset.');
   }, { timezone: 'UTC' });
 
-  console.log(`📦  ${client.commands.size} slash commands | ${client.prefixCmds.size} prefix commands loaded`);
+  console.log(`\x1b[35m
+  ╔══════════════════════════════════════════════════╗
+  ║                  COMMANDS LOADED                 ║
+  ╠══════════════════════════════════════════════════╣
+  ║ • \x1b[36mSlash Commands\x1b[35m: ${String(client.commands.size).padEnd(28, ' ')}\x1b[35m    ║
+  ║ • \x1b[36mPrefix Commands\x1b[35m: ${String(client.prefixCmds.size).padEnd(26, ' ')}\x1b[35m ║
+  ╚══════════════════════════════════════════════════╝
+  \x1b[0m`);
+
+  console.log(`\x1b[32m
+  ╔══════════════════════════════════════════════════╗
+  ║                  BOT STATUS                      ║
+  ╠══════════════════════════════════════════════════╣
+  ║ • \x1b[33mDevelopment by raiiynnn\x1b[32m        ║
+  ║ • \x1b[33mBot is Online and Ready\x1b[32m        ║
+  ║ • \x1b[33mAll Systems: Operational\x1b[32m       ║
+  ║ • \x1b[33mWaiting for Commands\x1b[32m           ║
+  ╚══════════════════════════════════════════════════╝
+  \x1b[0m`);
 });
 
 client.on('messageCreate', async message => {
