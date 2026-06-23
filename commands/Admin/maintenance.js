@@ -19,7 +19,7 @@ module.exports = {
     if (!botOwner || interaction.user.id !== botOwner) {
       return interaction.reply({
         content: '❌ Only bot owner can use this command',
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -45,7 +45,7 @@ module.exports = {
       console.error('[Maintenance] Error:', err);
       await interaction.reply({
         content: '❌ Failed to toggle maintenance',
-        ephemeral: true,
+        flags: 64,
       });
     }
   },

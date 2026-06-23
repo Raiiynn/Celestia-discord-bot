@@ -28,7 +28,7 @@ async function doUpdate(guild, channelId, messageId) {
     guildName: guild.name,
     banCount,
     bilingual: true,
-    footerText: `Auto Moderation - Honey Pot • ${new Date().toLocaleString()}`,
+    footerText: `Auto Moderation - Spam Bot Catch • ${new Date().toLocaleString()}`,
   });
 
   try {

@@ -1,11 +1,11 @@
 // handlers/honeypotHandler.js — Main honey pot orchestration
 
-const HoneypotManager = require('../lib/HoneypotManager');
-const inviteDetector = require('../utils/inviteDetector');
-const { cleanupUserMessages } = require('../utils/cleanupMessages');
-const { applyPunishment, isWhitelisted } = require('../utils/punishment');
-const { createTriggerEmbed } = require('../utils/honeypotEmbed');
-const { scheduleUpdate } = require('../services/banEmbedUpdater');
+const HoneypotManager = require("../lib/HoneypotManager");
+const inviteDetector = require("../utils/inviteDetector");
+const { cleanupUserMessages } = require("../utils/cleanupMessages");
+const { applyPunishment, isWhitelisted } = require("../utils/punishment");
+const { createTriggerEmbed } = require("../utils/honeypotEmbed");
+const { scheduleUpdate } = require("../services/banEmbedUpdater");
 
 // In-memory cooldown map to prevent duplicate processing
 const processingCooldowns = new Map();
@@ -44,7 +44,8 @@ async function processHoneypotMessage(message, client) {
     setTimeout(() => processingCooldowns.delete(cooldownKey), 30000);
 
     // Get whitelist
-    const { users: whitelistedUsers, roles: whitelistedRoles } = await HoneypotManager.getWhitelistFiltered(message.guildId);
+    const { users: whitelistedUsers, roles: whitelistedRoles } =
+      await HoneypotManager.getWhitelistFiltered(message.guildId);
 
     // Check if user is whitelisted
     if (isWhitelisted(message.member, whitelistedUsers, whitelistedRoles)) {
@@ -53,25 +54,35 @@ async function processHoneypotMessage(message, client) {
 
     // Treat any message in the honeypot channel as a trigger (catch-all)
     // This includes text, attachments, embeds, stickers, and CDN attachment links.
-    const detectedInvites = inviteDetector.getInvites(message.content || '');
+    const detectedInvites = inviteDetector.getInvites(message.content || "");
     const detectedAttachments = inviteDetector.getCdnAttachments
-      ? inviteDetector.getCdnAttachments(message.content || '')
+      ? inviteDetector.getCdnAttachments(message.content || "")
       : [];
     const hasAttachments = message.attachments && message.attachments.size > 0;
     const hasEmbeds = message.embeds && message.embeds.length > 0;
     const hasStickers = message.stickers && message.stickers.size > 0;
 
-    // If the user is whitelisted we already returned earlier; otherwise any message is a trigger
-    const isTrigger = true; // catch-all mode
-    if (!isTrigger) {
-      return false;
+    // Determine the specific violation type:
+    //   invite_spam  — message contains a Discord invite link (or obfuscated variant)
+    //   images_spam  — message contains CDN attachment URLs in content OR real file attachments
+    //   fallback     — any other message type caught by the honeypot (plain text, stickers, etc.)
+    let violationType;
+    if (detectedInvites.length > 0) {
+      violationType = "invite_spam";
+    } else if (detectedAttachments.length > 0 || hasAttachments) {
+      violationType = "images_spam";
+    } else {
+      // Catch-all: plain text, stickers, embeds without an identifiable pattern
+      violationType = "invite_spam";
     }
 
     // ============= TRIGGER DETECTED =============
-    console.log(`[HoneypotHandler] 🚨 Trigger detected in ${message.guild.name}: ${message.author.tag}`);
+    console.log(
+      `[HoneypotHandler] 🚨 Trigger detected in ${message.guild.name}: ${message.author.tag}`,
+    );
 
     const errors = [];
-    let actionTaken = 'None';
+    let actionTaken = "None";
     let cleanupSummary = {};
 
     // 1. Delete the triggering message
@@ -87,13 +98,11 @@ async function processHoneypotMessage(message, client) {
         cleanupSummary = await cleanupUserMessages(
           message.guild,
           message.author.id,
-          config.cleanup_window_minutes || 60
+          config.cleanup_window_minutes || 60,
         );
 
-        // Track cleanup errors
-        if (cleanupSummary.errors && cleanupSummary.errors.length > 0) {
-          errors.push(...cleanupSummary.errors.slice(0, 3));
-        }
+        // Cleanup errors (e.g. fetch failures) stay inside cleanupSummary only.
+        // They are shown in the "Global Cleanup" embed field, not the critical Errors field.
       } catch (err) {
         errors.push(`Global cleanup failed: ${err.message}`);
       }
@@ -101,11 +110,16 @@ async function processHoneypotMessage(message, client) {
 
     // 3. Apply punishment
     try {
+      const punishmentReason =
+        violationType === "images_spam"
+          ? "Honey Pot Spam Trap - Image Spam Detected"
+          : "Honey Pot Spam Trap - Invite Spam Detected";
+
       const punishmentResult = await applyPunishment(
         message.member,
-        config.punishment_mode || 'BAN',
+        config.punishment_mode || "BAN",
         config.timeout_duration_ms || 3600000,
-        'Honey Pot Spam Trap - Invite Spam Detected'
+        punishmentReason,
       );
 
       if (punishmentResult.success) {
@@ -113,7 +127,7 @@ async function processHoneypotMessage(message, client) {
         await HoneypotManager.updatePunishmentStats(
           message.guildId,
           config.punishment_mode,
-          cleanupSummary.totalDeleted || 0
+          cleanupSummary.totalDeleted || 0,
         );
       } else if (punishmentResult.error) {
         errors.push(`Punishment failed: ${punishmentResult.error}`);
@@ -127,54 +141,69 @@ async function processHoneypotMessage(message, client) {
       await HoneypotManager.recordTrigger(message.guildId, message.author.id, {
         message_id: message.id,
         channel_id: message.channelId,
-        violation_type: 'INVITE_SPAM',
+        violation_type: violationType,
         message_content: message.content.substring(0, 500),
         deleted_count: cleanupSummary.totalDeleted || 0,
         punishment_applied: actionTaken,
         errors: errors.length > 0 ? errors : undefined,
       });
     } catch (err) {
-      console.error('[HoneypotHandler] Error recording trigger:', err.message);
+      console.error("[HoneypotHandler] Error recording trigger:", err.message);
     }
 
     // 5. Send moderation embed to log channel
     if (config.log_channel_id) {
       try {
-        const logChannel = await client.channels.fetch(config.log_channel_id).catch(() => null);
+        const logChannel = await client.channels
+          .fetch(config.log_channel_id)
+          .catch(() => null);
         if (logChannel && logChannel.isTextBased()) {
           const embed = createTriggerEmbed({
             user: message.author,
             triggerChannel: message.channel,
-            violationType: 'INVITE_SPAM',
+            violationType,
             messageContent: message.content,
             cleanupSummary,
             actionTaken,
             errors,
             detectedInvites,
+            detectedAttachments,
           });
 
-          await logChannel.send({ embeds: [embed] }).catch(err => {
-            console.error('[HoneypotHandler] Error sending log embed:', err.message);
+          await logChannel.send({ embeds: [embed] }).catch((err) => {
+            console.error(
+              "[HoneypotHandler] Error sending log embed:",
+              err.message,
+            );
           });
         }
       } catch (err) {
-        console.error('[HoneypotHandler] Error fetching log channel:', err.message);
+        console.error(
+          "[HoneypotHandler] Error fetching log channel:",
+          err.message,
+        );
       }
     }
 
     // 6. Schedule embed update if embed is set up
     if (config.embed_channel_id && config.embed_message_id) {
       try {
-        scheduleUpdate(message.guild, config.embed_channel_id, config.embed_message_id);
+        scheduleUpdate(
+          message.guild,
+          config.embed_channel_id,
+          config.embed_message_id,
+        );
       } catch (err) {
-        console.error('[HoneypotHandler] Error scheduling embed update:', err.message);
+        console.error(
+          "[HoneypotHandler] Error scheduling embed update:",
+          err.message,
+        );
       }
     }
 
     return true;
-
   } catch (err) {
-    console.error('[HoneypotHandler] Unexpected error:', err);
+    console.error("[HoneypotHandler] Unexpected error:", err);
     return false;
   }
 }

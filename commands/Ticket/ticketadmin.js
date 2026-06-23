@@ -14,13 +14,13 @@ module.exports = {
 
     if (subcommand === 'list') {
       const list = channels.map(c => `#${c.name}`).join('\n') || 'No tickets';
-      await interaction.reply({ content: `**Tickets:**\n${list}`, ephemeral: true });
+      await interaction.reply({ content: `**Tickets:**\n${list}`, flags: 64 });
     }
     
     if (subcommand === 'close') {
       const channel = interaction.options.getChannel('channel');
       await channel.delete();
-      await interaction.reply({ content: '✅ Ticket closed', ephemeral: true });
+      await interaction.reply({ content: '✅ Ticket closed', flags: 64 });
     }
   },
 };

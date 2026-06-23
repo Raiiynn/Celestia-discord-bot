@@ -19,6 +19,6 @@ module.exports = {
       await channel.permissionOverwrites.edit(interaction.guild.id, { SendMessages: null });
     }
 
-    await interaction.reply({ content: `🔒 Channel ${lock ? 'locked' : 'unlocked'}`, ephemeral: true });
+    await interaction.reply({ content: `🔒 Channel ${lock ? 'locked' : 'unlocked'}`, flags: 64 });
   },
 };

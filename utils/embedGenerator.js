@@ -45,7 +45,7 @@ function infractionEmbed(guild, issuer, type, duration, expires, reason = 'Unspe
 
 async function pagesEmbed(interaction, embeds, ephemeral = false) {
   if (embeds.length === 0)
-    return interaction.reply({ content: 'There was an error.', ephemeral: true });
+    return interaction.reply({ content: 'There was an error.', flags: 64 });
   
   if (embeds.length === 1) {
     return interaction.reply({
@@ -80,7 +80,7 @@ async function pagesEmbed(interaction, embeds, ephemeral = false) {
 
   collector.on('collect', async (collected) => {
     if (collected.user.id !== interaction.user.id) {
-      collected.reply({ content: 'You cannot use this button.', ephemeral: true });
+      collected.reply({ content: 'You cannot use this button.', flags: 64 });
       return;
     }
 

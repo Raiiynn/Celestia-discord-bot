@@ -209,10 +209,10 @@ async function handleToggleSetting(interaction, guildId, setting) {
       .setTitle('⚙️ Setting Updated')
       .addFields({ name: setting.toUpperCase(), value: enabled ? '✅ Enabled' : '❌ Disabled' })
       .setTimestamp();
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error updating setting', ephemeral: true });
+    await interaction.reply({ content: '❌ Error updating setting', flags: 64 });
   }
 }
 
@@ -238,10 +238,10 @@ async function handleThresholds(interaction, guildId) {
         { name: 'Mute Duration', value: `${duration ? duration + 's' : '(unchanged)'}`, inline: true }
       )
       .setTimestamp();
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error updating thresholds', ephemeral: true });
+    await interaction.reply({ content: '❌ Error updating thresholds', flags: 64 });
   }
 }
 
@@ -253,7 +253,7 @@ async function handleAddBadword(interaction, guildId) {
   try {
     const success = await storage.addBadword(guildId, word, severity, isRegex, interaction.user.id);
     if (!success) {
-      return await interaction.reply({ content: '⚠️ Word already exists', ephemeral: true });
+      return await interaction.reply({ content: '⚠️ Word already exists', flags: 64 });
     }
 
     const embed = new EmbedBuilder()
@@ -265,10 +265,10 @@ async function handleAddBadword(interaction, guildId) {
         { name: 'Regex', value: isRegex ? 'Yes' : 'No', inline: true }
       )
       .setTimestamp();
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error adding bad word', ephemeral: true });
+    await interaction.reply({ content: '❌ Error adding bad word', flags: 64 });
   }
 }
 
@@ -282,10 +282,10 @@ async function handleRemoveBadword(interaction, guildId) {
       .setTitle('✅ Bad Word Removed')
       .addFields({ name: 'Pattern', value: `\`${word}\`` })
       .setTimestamp();
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error removing bad word', ephemeral: true });
+    await interaction.reply({ content: '❌ Error removing bad word', flags: 64 });
   }
 }
 
@@ -293,7 +293,7 @@ async function handleListBadwords(interaction, guildId) {
   try {
     const badwords = await storage.getBadwords(guildId);
     if (badwords.length === 0) {
-      return await interaction.reply({ content: '📋 No bad words configured', ephemeral: true });
+      return await interaction.reply({ content: '📋 No bad words configured', flags: 64 });
     }
 
     const fields = badwords.map(w => ({
@@ -308,10 +308,10 @@ async function handleListBadwords(interaction, guildId) {
       .addFields(fields)
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error loading bad words', ephemeral: true });
+    await interaction.reply({ content: '❌ Error loading bad words', flags: 64 });
   }
 }
 
@@ -322,7 +322,7 @@ async function handleAddSpam(interaction, guildId) {
   try {
     const success = await storage.addSpamPattern(guildId, pattern, severity, interaction.user.id);
     if (!success) {
-      return await interaction.reply({ content: '⚠️ Pattern already exists', ephemeral: true });
+      return await interaction.reply({ content: '⚠️ Pattern already exists', flags: 64 });
     }
 
     const embed = new EmbedBuilder()
@@ -333,10 +333,10 @@ async function handleAddSpam(interaction, guildId) {
         { name: 'Severity', value: severity === 1 ? 'Warn' : severity === 2 ? 'Mute' : 'Kick' }
       )
       .setTimestamp();
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error adding spam pattern', ephemeral: true });
+    await interaction.reply({ content: '❌ Error adding spam pattern', flags: 64 });
   }
 }
 
@@ -350,10 +350,10 @@ async function handleRemoveSpam(interaction, guildId) {
       .setTitle('✅ Spam Pattern Removed')
       .addFields({ name: 'Pattern', value: `\`${pattern}\`` })
       .setTimestamp();
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error removing spam pattern', ephemeral: true });
+    await interaction.reply({ content: '❌ Error removing spam pattern', flags: 64 });
   }
 }
 
@@ -361,7 +361,7 @@ async function handleListSpam(interaction, guildId) {
   try {
     const patterns = await storage.getSpamPatterns(guildId);
     if (patterns.length === 0) {
-      return await interaction.reply({ content: '📋 No spam patterns configured', ephemeral: true });
+      return await interaction.reply({ content: '📋 No spam patterns configured', flags: 64 });
     }
 
     const fields = patterns.map(p => ({
@@ -376,10 +376,10 @@ async function handleListSpam(interaction, guildId) {
       .addFields(fields)
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error loading spam patterns', ephemeral: true });
+    await interaction.reply({ content: '❌ Error loading spam patterns', flags: 64 });
   }
 }
 
@@ -390,7 +390,7 @@ async function handleAddWhitelist(interaction, guildId) {
   try {
     const success = await storage.addWhitelistUrl(guildId, url, reason, interaction.user.id);
     if (!success) {
-      return await interaction.reply({ content: '⚠️ URL already whitelisted', ephemeral: true });
+      return await interaction.reply({ content: '⚠️ URL already whitelisted', flags: 64 });
     }
 
     const embed = new EmbedBuilder()
@@ -401,10 +401,10 @@ async function handleAddWhitelist(interaction, guildId) {
         { name: 'Reason', value: reason || 'No reason provided' }
       )
       .setTimestamp();
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error adding whitelist', ephemeral: true });
+    await interaction.reply({ content: '❌ Error adding whitelist', flags: 64 });
   }
 }
 
@@ -418,10 +418,10 @@ async function handleRemoveWhitelist(interaction, guildId) {
       .setTitle('✅ URL Removed from Whitelist')
       .addFields({ name: 'URL', value: `\`${url}\`` })
       .setTimestamp();
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error removing from whitelist', ephemeral: true });
+    await interaction.reply({ content: '❌ Error removing from whitelist', flags: 64 });
   }
 }
 
@@ -429,7 +429,7 @@ async function handleListWhitelist(interaction, guildId) {
   try {
     const whitelist = await storage.getWhitelistUrls(guildId);
     if (whitelist.length === 0) {
-      return await interaction.reply({ content: '📋 No whitelisted URLs', ephemeral: true });
+      return await interaction.reply({ content: '📋 No whitelisted URLs', flags: 64 });
     }
 
     const fields = whitelist.map(w => ({
@@ -444,10 +444,10 @@ async function handleListWhitelist(interaction, guildId) {
       .addFields(fields)
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error loading whitelist', ephemeral: true });
+    await interaction.reply({ content: '❌ Error loading whitelist', flags: 64 });
   }
 }
 
@@ -502,10 +502,10 @@ async function handleStatus(interaction, guildId) {
       )
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error loading status', ephemeral: true });
+    await interaction.reply({ content: '❌ Error loading status', flags: 64 });
   }
 }
 
@@ -526,10 +526,10 @@ async function handleStats(interaction, guildId) {
       )
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   } catch (e) {
     console.error(e);
-    await interaction.reply({ content: '❌ Error loading statistics', ephemeral: true });
+    await interaction.reply({ content: '❌ Error loading statistics', flags: 64 });
   }
 }
 

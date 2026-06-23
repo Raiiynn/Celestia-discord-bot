@@ -13,7 +13,7 @@ module.exports = {
     
     await interaction.reply({
       content: isBanned ? `✅ User <@${userId}> is **banned**` : `❌ User <@${userId}> is **not banned**`,
-      ephemeral: true,
+      flags: 64,
     });
   },
 };

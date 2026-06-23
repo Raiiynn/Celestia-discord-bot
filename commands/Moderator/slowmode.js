@@ -12,6 +12,6 @@ module.exports = {
     const channel = interaction.options.getChannel('channel') || interaction.channel;
     
     await channel.setRateLimitPerUser(seconds);
-    await interaction.reply({ content: `🐢 Slowmode set to ${seconds}s in ${channel}`, ephemeral: true });
+    await interaction.reply({ content: `🐢 Slowmode set to ${seconds}s in ${channel}`, flags: 64 });
   },
 };

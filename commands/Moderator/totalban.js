@@ -13,6 +13,6 @@ module.exports = {
       .setTitle('🔨 Total Bans')
       .setDescription(`**${bans.size}** users are banned`);
     
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   },
 };

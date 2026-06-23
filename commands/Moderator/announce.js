@@ -20,6 +20,6 @@ module.exports = {
       .setTimestamp();
 
     await targetChannel.send({ embeds: [embed] });
-    await interaction.reply({ content: `✅ Announced to ${targetChannel}`, ephemeral: true });
+    await interaction.reply({ content: `✅ Announced to ${targetChannel}`, flags: 64 });
   },
 };

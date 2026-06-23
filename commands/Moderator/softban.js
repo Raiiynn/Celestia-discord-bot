@@ -13,7 +13,7 @@ module.exports = {
     const member = interaction.guild.members.cache.get(user.id);
 
     if (!member) {
-      return interaction.reply({ content: '❌ User not found in server', ephemeral: true });
+      return interaction.reply({ content: '❌ User not found in server', flags: 64 });
     }
 
     try {
@@ -25,7 +25,7 @@ module.exports = {
       
       await interaction.reply({ embeds: [embed] });
     } catch (e) {
-      await interaction.reply({ content: `❌ Error: ${e.message}`, ephemeral: true });
+      await interaction.reply({ content: `❌ Error: ${e.message}`, flags: 64 });
     }
   },
 };

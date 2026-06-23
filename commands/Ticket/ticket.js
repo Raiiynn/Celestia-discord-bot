@@ -69,7 +69,7 @@ module.exports = {
           { name: 'Logs', value: logs?.toString() || 'Not set', inline: true },
         );
       
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed], flags: 64 });
     }
 
     if (subcommand === 'create') {
@@ -80,7 +80,7 @@ module.exports = {
       const userHasTicket = existingTickets.find(t => t.user_id === user.id && t.status === 'open');
       if (userHasTicket) {
         const existingChannel = guild.channels.cache.get(userHasTicket.channel_id);
-        return interaction.reply({ content: `⚠️ You already have a ticket: ${existingChannel}`, ephemeral: true });
+        return interaction.reply({ content: `⚠️ You already have a ticket: ${existingChannel}`, flags: 64 });
       }
 
       const guildData = await db.from('guilds').select('ticket_category').eq('guild_id', guild.id).single();
@@ -111,7 +111,7 @@ module.exports = {
         );
 
       await ticketChannel.send({ embeds: [embed], components: [row] });
-      await interaction.reply({ content: `✅ Ticket created: ${ticketChannel}`, ephemeral: true });
+      await interaction.reply({ content: `✅ Ticket created: ${ticketChannel}`, flags: 64 });
     }
 
     if (subcommand === 'close') {
@@ -119,7 +119,7 @@ module.exports = {
       const ticket = await getTicketDB(guild.id, channel.id);
       
       if (!ticket || ticket.status === 'closed') {
-        return interaction.reply({ content: '❌ Ticket not found or already closed', ephemeral: true });
+        return interaction.reply({ content: '❌ Ticket not found or already closed', flags: 64 });
       }
 
       const messages = await channel.messages.fetch({ limit: 100 });
@@ -158,14 +158,14 @@ module.exports = {
       }
 
       await channel.delete();
-      await interaction.reply({ content: '✅ Ticket closed and transcript saved', ephemeral: true });
+      await interaction.reply({ content: '✅ Ticket closed and transcript saved', flags: 64 });
     }
 
     if (subcommand === 'list') {
       const tickets = await getGuildTicketsDB(guild.id);
       
       if (tickets.length === 0) {
-        return interaction.reply({ content: 'No open tickets', ephemeral: true });
+        return interaction.reply({ content: 'No open tickets', flags: 64 });
       }
 
       const list = await Promise.all(tickets.map(async t => {
@@ -174,7 +174,7 @@ module.exports = {
         return `#${channel?.name || t.channel_id} - ${user?.username || t.user_id} (${t.reason})`;
       }));
 
-      await interaction.reply({ content: `**Open Tickets:**\n${list.join('\n')}`, ephemeral: true });
+      await interaction.reply({ content: `**Open Tickets:**\n${list.join('\n')}`, flags: 64 });
     }
   },
 };

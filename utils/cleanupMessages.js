@@ -16,7 +16,7 @@ async function cleanupUserMessages(guild, userId, windowMinutes = 60) {
   };
 
   if (!guild || !userId) {
-    summary.errors.push('Missing guild or userId');
+    summary.errors.push("Missing guild or userId");
     return summary;
   }
 
@@ -24,7 +24,7 @@ async function cleanupUserMessages(guild, userId, windowMinutes = 60) {
 
   try {
     const channels = guild.channels.cache.filter(
-      ch => ch.isTextBased() && !ch.isDMBased()
+      (ch) => ch.isTextBased() && !ch.isDMBased(),
     );
 
     for (const [channelId, channel] of channels) {
@@ -53,7 +53,9 @@ async function cleanupUserMessages(guild, userId, windowMinutes = 60) {
             }
 
             // Fetch messages in batches
-            const messages = await channel.messages.fetch({ limit: 100, ...options }).catch(() => null);
+            const messages = await channel.messages
+              .fetch({ limit: 100, ...options })
+              .catch(() => null);
 
             if (!messages || messages.size === 0) {
               hasMore = false;
@@ -62,7 +64,8 @@ async function cleanupUserMessages(guild, userId, windowMinutes = 60) {
 
             // Filter messages from the user within the time window
             const toDelete = messages.filter(
-              msg => msg.author?.id === userId && msg.createdTimestamp > cutoffTime
+              (msg) =>
+                msg.author?.id === userId && msg.createdTimestamp > cutoffTime,
             );
 
             if (toDelete.size === 0) {
@@ -82,12 +85,13 @@ async function cleanupUserMessages(guild, userId, windowMinutes = 60) {
             }
 
             lastMessage = messages.last();
-            
-            // Small delay to avoid rate limits
-            await new Promise(resolve => setTimeout(resolve, 100));
 
+            // Small delay to avoid rate limits
+            await new Promise((resolve) => setTimeout(resolve, 100));
           } catch (err) {
-            summary.errors.push(`Fetch error in ${channel.name}: ${err.message}`);
+            summary.errors.push(
+              `Fetch error in ${channel.name}: ${err.message}`,
+            );
             hasMore = false;
           }
         }
@@ -95,12 +99,12 @@ async function cleanupUserMessages(guild, userId, windowMinutes = 60) {
         if (deletedInChannel > 0) {
           summary.channelsSummary[channel.name] = deletedInChannel;
         }
-
       } catch (err) {
-        summary.errors.push(`Channel error ${channel?.name || 'unknown'}: ${err.message}`);
+        summary.errors.push(
+          `Channel error ${channel?.name || "unknown"}: ${err.message}`,
+        );
       }
     }
-
   } catch (err) {
     summary.errors.push(`Global cleanup error: ${err.message}`);
   }
@@ -115,7 +119,7 @@ async function cleanupUserMessages(guild, userId, windowMinutes = 60) {
  * @returns {string} - Formatted summary
  */
 function formatCleanupSummary(summary) {
-  if (!summary) return 'No cleanup performed';
+  if (!summary) return "No cleanup performed";
 
   let text = `🧹 **Global Cleanup Summary**\n`;
   text += `Total Deleted: **${summary.totalDeleted}** messages\n`;

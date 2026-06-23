@@ -2,8 +2,8 @@ const { EmbedBuilder } = require('discord.js');
 
 function buildBanEmbed({ guildName, description, banCount, footerText, language = 'en', bilingual = false }) {
   const descriptions = {
-    en: 'DO NOT SEND MESSAGES IN THIS CHANNEL\nThis channel is used to catch spam bots. Any messages sent here will result in an immediate ban.',
-    id: 'JANGAN KIRIM PESAN DI CHANNEL INI\nChannel ini digunakan untuk menangkap bot spam. Setiap pesan yang dikirim di sini akan mengakibatkan pemblokiran langsung.',
+    en: 'DO NOT SEND MESSAGES in this channel as it is used to catch spam bots.\nAny messages sent here will be blocked immediately.',
+    id: 'Jangan kirim pesan di channel ini karena digunakan untuk menangkap bot spam\nSetiap pesan yang dikirim di sini akan diblokir secara langsung.',
   };
 
   let desc;
@@ -16,14 +16,14 @@ function buildBanEmbed({ guildName, description, banCount, footerText, language 
   }
 
   const embed = new EmbedBuilder()
-    .setTitle('Spam Bot Catch Channel')
+    .setTitle('🛑 Security Monitor Intercept')
     .setDescription(desc)
     .addFields({ name: 'Bans', value: String(banCount || 0), inline: true })
-    .setColor(0xfbff0d)
+    .setColor(0xcc0227)
     .setTimestamp(new Date());
 
   if (footerText) embed.setFooter({ text: footerText });
-  else embed.setFooter({ text: `Auto Moderation - Honey Pot • ${new Date().toLocaleString()}` });
+  else embed.setFooter({ text: `Auto Moderation - Spam Bot Catch • ${new Date().toLocaleString()}` });
 
   return embed;
 }

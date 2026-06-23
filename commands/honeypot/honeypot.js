@@ -139,7 +139,7 @@ module.exports = {
     if (!interaction.member.permissions.has('Administrator')) {
       return interaction.reply({
         content: '❌ You need Administrator permission',
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -175,7 +175,7 @@ module.exports = {
       console.error('[HoneypotCommand] Error:', err);
       const reply = {
         content: `❌ Error: ${err.message}`,
-        ephemeral: true,
+        flags: 64,
       };
 
       if (interaction.replied || interaction.deferred) {
@@ -329,7 +329,7 @@ async function handleEmbedInit(interaction) {
       guildName: interaction.guild.name,
       banCount,
       bilingual: true,
-      footerText: `Auto Moderation - Honey Pot • ${new Date().toLocaleString()}`,
+      footerText: `Auto Moderation - Security Intercept • ${new Date().toLocaleString()}`,
     });
 
     // Send embed to target channel

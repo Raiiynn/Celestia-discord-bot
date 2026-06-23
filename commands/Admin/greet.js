@@ -138,7 +138,7 @@ module.exports = {
       console.error('[Greet] Error:', err);
       return await interaction.editReply({
         content: '❌ An error occurred while processing your request.',
-        ephemeral: true,
+        flags: 64,
       });
     }
   },
@@ -268,7 +268,7 @@ async function handlePreview(interaction, guildId) {
     if (!settings || !settings.greet_enabled) {
       return await interaction.editReply({
         content: '❌ Greet messages are not configured. Use `/greet setup` first.',
-        ephemeral: true,
+        flags: 64,
       });
     }
 

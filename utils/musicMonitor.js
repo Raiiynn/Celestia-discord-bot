@@ -134,11 +134,20 @@ async function updateGuildMusicMonitor(client, guild) {
     if (cached?.message_id) {
       try {
         const msg = await channel.messages.fetch(cached.message_id);
+        // Compare existing embed with new embed to avoid unnecessary edits
+        try {
+          const currentEmbedJson = msg.embeds?.[0]?.toJSON ? JSON.stringify(msg.embeds[0].toJSON()) : JSON.stringify(msg.embeds[0] || {});
+          const newEmbedJson = JSON.stringify(embed.toJSON ? embed.toJSON() : embed);
+          if (currentEmbedJson === newEmbedJson) {
+            // No changes — skip edit and logging
+            return;
+          }
+        } catch (_) {}
+
         await msg.edit({ embeds: [embed] });
-        console.log(`[MusicMonitor] Updated existing message in ${guild.name}`);
         return;
       } catch (err) {
-        console.log(`[MusicMonitor] Message not found in ${guild.name}, searching for existing monitor message...`);
+        
 
         try {
           const allMessages = await channel.messages.fetch({ limit: 50 });
@@ -151,13 +160,11 @@ async function updateGuildMusicMonitor(client, guild) {
           if (existingMonitor) {
             await existingMonitor.edit({ embeds: [embed] });
             await storage.saveMusicCache(channelId, existingMonitor.id);
-            console.log(`[MusicMonitor] Found and updated existing monitor message in ${guild.name}`);
             return;
           }
         } catch {}
 
         if (!cached?.message_id) {
-          console.log(`[MusicMonitor] No cached message, sending first monitor message in ${guild.name}...`);
           const msg = await channel.send({ embeds: [embed] });
           await storage.saveMusicCache(channelId, msg.id);
           console.log(`[MusicMonitor] Sent initial monitor message in ${guild.name}: ${msg.id}`);
@@ -167,7 +174,6 @@ async function updateGuildMusicMonitor(client, guild) {
         console.warn(`[MusicMonitor] Could not update or find message in ${guild.name} - skipping update`);
       }
     } else {
-      console.log(`[MusicMonitor] No cache, sending first monitor message in ${guild.name}...`);
       const msg = await channel.send({ embeds: [embed] });
       await storage.saveMusicCache(channelId, msg.id);
       console.log(`[MusicMonitor] Sent initial monitor message in ${guild.name}: ${msg.id}`);
@@ -195,11 +201,20 @@ async function updateMusicMonitor(client) {
     if (cached?.message_id) {
       try {
         const msg = await channel.messages.fetch(cached.message_id);
+        // Compare existing embed with new embed to avoid unnecessary edits
+        try {
+          const currentEmbedJson = msg.embeds?.[0]?.toJSON ? JSON.stringify(msg.embeds[0].toJSON()) : JSON.stringify(msg.embeds[0] || {});
+          const newEmbedJson = JSON.stringify(embed.toJSON ? embed.toJSON() : embed);
+          if (currentEmbedJson === newEmbedJson) {
+            // No changes — skip edit and logging
+            return;
+          }
+        } catch (_) {}
+
         await msg.edit({ embeds: [embed] });
-        console.log('[MusicMonitor] Updated existing message (no re-send)');
         return;
       } catch (err) {
-        console.log('[MusicMonitor] Message not found, searching for existing monitor message...');
+        
 
         try {
           const allMessages = await channel.messages.fetch({ limit: 50 });
@@ -212,13 +227,11 @@ async function updateMusicMonitor(client) {
           if (existingMonitor) {
             await existingMonitor.edit({ embeds: [embed] });
             await storage.saveMusicCache(channelId, existingMonitor.id);
-            console.log('[MusicMonitor] Found and updated existing monitor message');
             return;
           }
         } catch {}
 
         if (!cached?.message_id) {
-          console.log('[MusicMonitor] No cached message, sending first monitor message...');
           const msg = await channel.send({ embeds: [embed] });
           await storage.saveMusicCache(channelId, msg.id);
           console.log('[MusicMonitor] Sent initial monitor message:', msg.id);
@@ -228,7 +241,6 @@ async function updateMusicMonitor(client) {
         console.warn('[MusicMonitor] Could not update or find message - skipping update');
       }
     } else {
-      console.log('[MusicMonitor] No cache, sending first monitor message...');
       const msg = await channel.send({ embeds: [embed] });
       await storage.saveMusicCache(channelId, msg.id);
       console.log('[MusicMonitor] Sent initial monitor message:', msg.id);

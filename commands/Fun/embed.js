@@ -36,9 +36,9 @@ module.exports = {
 
     try {
       await channel.send({ embeds: [embed] });
-      await interaction.reply({ content: `✅ Embed sent to <#${channel.id}>!`, ephemeral: true });
+      await interaction.reply({ content: `✅ Embed sent to <#${channel.id}>!`, flags: 64 });
     } catch {
-      await interaction.reply({ content: `❌ Couldn't send to <#${channel.id}>.`, ephemeral: true });
+      await interaction.reply({ content: `❌ Couldn't send to <#${channel.id}>.`, flags: 64 });
     }
   },
 };

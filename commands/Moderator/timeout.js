@@ -23,9 +23,9 @@ module.exports = {
     const reason   = interaction.options.getString('reason') || 'No reason provided';
     const duration = parseDuration(durStr);
 
-    if (!target)   return interaction.reply({ content: '❌ User not found.', ephemeral: true });
-    if (!duration) return interaction.reply({ content: '❌ Invalid duration. Use e.g. `10m`, `1h`, `1d`.', ephemeral: true });
-    if (duration > 28 * 86_400_000) return interaction.reply({ content: '❌ Max timeout is 28 days.', ephemeral: true });
+    if (!target)   return interaction.reply({ content: '❌ User not found.', flags: 64 });
+    if (!duration) return interaction.reply({ content: '❌ Invalid duration. Use e.g. `10m`, `1h`, `1d`.', flags: 64 });
+    if (duration > 28 * 86_400_000) return interaction.reply({ content: '❌ Max timeout is 28 days.', flags: 64 });
 
     await target.timeout(duration, reason);
     await interaction.reply({

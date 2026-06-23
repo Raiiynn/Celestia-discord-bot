@@ -22,7 +22,7 @@ module.exports = {
       
       await interaction.reply({ embeds: [embed] });
     } catch (e) {
-      await interaction.reply({ content: `❌ Error: ${e.message}`, ephemeral: true });
+      await interaction.reply({ content: `❌ Error: ${e.message}`, flags: 64 });
     }
   },
 };
